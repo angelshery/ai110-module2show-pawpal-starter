@@ -61,10 +61,23 @@ If the app were expanded to handle many pets or precise scheduling (for example,
 - How did you use AI tools during this project (for example: design brainstorming, debugging, refactoring)?
 - What kinds of prompts or questions were most helpful?
 
+I used Claude in VS Code throughout all four phases of the project. The most effective uses were:
+
+- **Generating class skeletons from my UML** — asking Claude to convert my diagram into Python stubs with docstrings saved time and kept the code aligned with my design from the start.
+- **Code review before implementing** — asking Claude to review my skeleton and identify missing relationships (like the Scheduler not storing the owner) helped me catch structural problems early, before any logic was written.
+- **Phase-by-phase chat sessions** — I kept algorithmic planning (Phase 4 sorting, filtering, conflict detection) in a separate chat session from my core implementation. This made it much easier to stay focused because each session had a clear scope and didn't get cluttered with earlier design decisions.
+- **Targeted prompts** — the most useful prompts were specific ones like "only change the generate_plan method" or "do not redesign the class structure." Vague prompts like "improve my code" produced suggestions that were too broad and harder to evaluate.
+
 **b. Judgment and verification**
 
 - Describe one moment where you did not accept an AI suggestion as-is.
 - How did you evaluate or verify what the AI suggested?
+
+When Claude reviewed my Task class, it suggested adding a `__post_init__` validation method with a `VALID_TASK_TYPES` list to prevent typos in task type strings. I read through the suggestion and decided to remove it. The validation added complexity that was not required by the project, and it would have made the class harder to read for a beginner audience.
+
+I verified this decision by asking Claude directly whether the simpler version would still work for the assignment scope. It confirmed that for a small app with a fixed set of task types, keeping the class simple was the right call. This showed me that AI suggestions are not always wrong or always right — they need to be evaluated against the actual requirements and scope of what you are building.
+
+I also noticed that Claude's conflict detection suggestion using `defaultdict` was more Pythonic than my current version, but harder to read. I kept the simpler version because readability mattered more than cleverness at this stage, and documented the tradeoff in section 2b.
 
 ---
 
@@ -75,10 +88,30 @@ If the app were expanded to handle many pets or precise scheduling (for example,
 - What behaviors did you test?
 - Why were these tests important?
 
+I wrote pytest tests covering the following behaviors:
+
+- **Task completion** — verifying that `mark_complete()` flips `completed` from `False` to `True`
+- **Recurring tasks** — verifying that a daily task returns a new Task with `due_date + 1 day`, and that a one-off task returns `None`
+- **Sorting** — verifying that tasks added out of chronological order are returned in the correct order by `sort_by_time()`, and that priority breaks ties at the same start time
+- **Conflict detection** — verifying that two tasks at `"08:00"` produce exactly one warning, and that tasks at different times produce an empty list
+- **Filtering** — verifying that `filter_tasks()` correctly separates tasks by pet name and by completion status
+- **Edge cases** — verifying that a pet with no tasks returns an empty list without crashing, and that a scheduler with no tasks produces an empty plan
+
+These tests were important because the scheduling logic is the core of the project. Without them, it would be easy to introduce a bug in sorting or conflict detection and not notice until the app behaved unexpectedly in the UI.
+
 **b. Confidence**
 
 - How confident are you that your scheduler works correctly?
 - What edge cases would you test next if you had more time?
+
+I am confident the core backend logic works correctly. All tests pass, and the behaviors tested match the features shown in the Streamlit UI demo.
+
+The areas I would test next with more time are:
+
+- **Duration overlap conflicts** — testing that tasks at different times but overlapping durations are eventually caught once that logic is added
+- **Owner with no pets** — verifying the scheduler handles this gracefully without an error
+- **Recurring task integration** — testing that calling `pet.add_task(next_task)` after `mark_complete()` correctly registers the new task in the plan on the next run
+- **Streamlit UI behavior** — the UI layer currently has no automated tests; testing form submissions and session state updates would increase overall confidence
 
 ---
 
@@ -88,10 +121,20 @@ If the app were expanded to handle many pets or precise scheduling (for example,
 
 - What part of this project are you most satisfied with?
 
+The part I am most satisfied with is the Scheduler class. It started as a simple stub and grew into a class that sorts, filters, detects conflicts, and explains its plan — all without becoming difficult to read. Each method does one thing clearly, and the logic is easy to follow even without prior experience with scheduling algorithms.
+
 **b. What you would improve**
 
 - If you had another iteration, what would you improve or redesign?
 
+I would upgrade the conflict detection from exact time matching to duration-based overlap checking. Right now, a 30-minute task at 08:00 and a 10-minute task at 08:15 would not trigger a warning, even though they overlap. Adding end time calculation would make the scheduler more realistic without requiring a full redesign.
+
+I would also connect the recurring task logic to the Streamlit UI so users can see the next occurrence appear automatically after marking a task complete.
+
 **c. Key takeaway**
 
 - What is one important thing you learned about designing systems or working with AI on this project?
+
+The most important thing I learned is that AI works best when you already have a plan. When I came to Claude with a clear UML, specific method names, and a defined scope, the output was useful and easy to integrate. When I asked open-ended questions without constraints, the suggestions were often too complex or solved a different problem than the one I had.
+
+Being the lead architect means deciding what to keep, what to simplify, and what to reject entirely. AI accelerated the writing of code, but every structural decision — which classes exist, how they relate, what goes in each method — came from me. That balance was the most valuable thing I took away from this project.
